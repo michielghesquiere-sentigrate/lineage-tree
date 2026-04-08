@@ -2,6 +2,8 @@
 
 Convert and visualise lineage trees written in a **nested-tuple timepoint format** into standard [Newick](https://en.wikipedia.org/wiki/Newick_format) strings and cladogram-style figures.
 
+![letter example](outputs/example_letters.png)
+
 ---
 
 ## Format description
@@ -31,19 +33,33 @@ t2  B  →  D        C  →  E, F
 t3  D  →  G, H     E  →  I      F  →  J, K
 ```
 
-Node names can be **letters, numbers, or any alphanumeric string** (underscores, hyphens, and dots are also allowed).
+Node names can be **letters, numbers, or any alphanumeric string**
+(underscores, hyphens, and dots are also allowed).
 
 ---
 
-## Installation
+## Getting started
 
-Requires [uv](https://docs.astral.sh/uv/).
+### Prerequisites
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Python | ≥ 3.12 | [python.org](https://www.python.org/downloads/) |
+| uv | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+
+> **Why uv?** uv replaces pip + venv in one fast tool — it creates the
+> virtual environment, pins dependencies, and runs scripts without you
+> having to activate anything.
+
+### Clone & install
 
 ```bash
-git clone <repo>
+git clone https://github.com/michielghesquiere-sentigrate/lineage-tree.git
 cd lineage-tree
-uv sync          # creates .venv and installs dependencies
+uv sync          # creates .venv and installs all dependencies
 ```
+
+That's it — no manual `pip install`, no `source .venv/bin/activate`.
 
 ---
 
@@ -60,15 +76,29 @@ uv run python main.py '[((G,H),(I,(J,K))),(D,(E,F)),(B,C),(A)]' \
     --save outputs/my_tree.png \
     --title "My lineage"
 
-# Both Newick and image at once
+# Both Newick string and image at once
 uv run python main.py '[((G,H),(I,(J,K))),(D,(E,F)),(B,C),(A)]' \
     --newick --save outputs/my_tree.png
 
 # Read from stdin
 echo '[((1,2),(3,(4,5))),(6,(7,8)),(9,10),(11)]' | uv run python main.py
 
-# Interactive window (requires a display)
+# Open interactive window (requires a local display)
 uv run python main.py '[((G,H),(I,(J,K))),(D,(E,F)),(B,C),(A)]' --show
+```
+
+All CLI options:
+
+```
+positional:
+  TREE          Nested-tuple tree string (reads stdin if omitted)
+
+options:
+  --newick      Print Newick string to stdout
+  --save PATH   Save visualisation to PATH (.png / .pdf / .svg)
+  --show        Open interactive plot window
+  --title TEXT  Figure title
+  -h, --help    Show this help message and exit
 ```
 
 ### Python API
@@ -79,11 +109,11 @@ from visualize import visualize
 
 tree = "[((G,H),(I,(J,K))),(D,(E,F)),(B,C),(A)]"
 
-# Newick string
+# Get the Newick string
 print(convert(tree))
 # → (((G,H)D)B,((I)E,(J,K)F)C)A;
 
-# Save figure
+# Save a figure
 visualize(tree, output_path="outputs/my_tree.png", title="Example tree")
 ```
 
@@ -133,19 +163,4 @@ Newick: ((cell1a,cell1b)clone1,(cell2a,cell2b,cell2c)clone2)stem;
 | `main.py`             | CLI entry point                              |
 | `outputs/`            | Example output files                         |
 | `pyproject.toml`      | uv project config & dependencies             |
-
----
-
-## CLI options
-
-```
-positional:
-  TREE              Nested-tuple tree string (reads stdin if omitted)
-
-optional:
-  --newick          Print Newick string to stdout
-  --save PATH       Save visualisation to PATH (.png / .pdf / .svg)
-  --show            Open interactive plot window
-  --title TEXT      Figure title
-  -h, --help        Show help
-```
+| `uv.lock`             | Pinned dependency versions                   |
