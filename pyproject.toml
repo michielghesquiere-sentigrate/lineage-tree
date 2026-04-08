@@ -1,0 +1,12 @@
+[project]
+name = "lineage-tree"
+version = "0.1.0"
+description = "Convert and visualise nested-tuple lineage trees in Newick format"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.10.8",
+]
+
+[project.scripts]
+lineage-tree = "main:main"
