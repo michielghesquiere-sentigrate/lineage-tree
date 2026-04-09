@@ -167,9 +167,21 @@ def _draw_symmetry_gauge(ax, score: float, descriptor: str):
             fontsize=8, style="italic", color="#444444", zorder=2)
 
 
-def _text_panel(ax, label, code_str, bg_color, border_color, wrap_width=72):
-    """Draw a labelled monospace code box inside axes *ax*."""
+def _text_panel(ax, label, code_str, bg_color, border_color, wrap_width=72,
+                 compact=False):
+    """Draw a labelled monospace code box inside axes *ax*.
+
+    If compact=True, use smaller font and narrower wrap for space-constrained layouts.
+    """
     ax.axis("off")
+    if compact:
+        wrap_width = 35
+        fontsize_label = 7.5
+        fontsize_code = 6.5
+    else:
+        fontsize_label = 9
+        fontsize_code = 8.5
+
     wrapped = "\n".join(textwrap.wrap(code_str, width=wrap_width))
 
     ax.add_patch(mpatches.FancyBboxPatch(
@@ -180,10 +192,10 @@ def _text_panel(ax, label, code_str, bg_color, border_color, wrap_width=72):
     ))
     ax.text(0.03, 0.52, label,
             transform=ax.transAxes, ha="left", va="center",
-            fontsize=9, fontweight="bold", color=border_color, zorder=2)
+            fontsize=fontsize_label, fontweight="bold", color=border_color, zorder=2)
     ax.text(0.5, 0.52, wrapped,
             transform=ax.transAxes, ha="center", va="center",
-            fontsize=8.5, fontfamily="monospace", color="#1a1a1a", zorder=2)
+            fontsize=fontsize_code, fontfamily="monospace", color="#1a1a1a", zorder=2)
 
 
 def _draw_tree_panel(ax, root, pos, max_depth, max_lbl, node_ratios=None):

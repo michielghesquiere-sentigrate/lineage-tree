@@ -113,27 +113,26 @@ def save_comparison(examples, path, title="Symmetry comparison"):
         ))
 
     n = len(trees)
-    panel_h   = 0.55          # inches per text/gauge panel
-    col_w     = [max(7, t["n_leaves"] * 1.15) for t in trees]
+    panel_h   = 0.65          # slightly taller for readability
+    col_w     = [max(10, t["n_leaves"] * 1.4) for t in trees]  # wider columns
     tree_hs   = [max(3.5, (t["max_depth"] + 1) * 1.35) for t in trees]
-    main_tree_h = max(tree_hs)                 # all columns share the same row height
+    main_tree_h = max(tree_hs)
 
-    fig_w = sum(col_w) + 0.4 * (n - 1)
-    fig_h = main_tree_h + 3 * panel_h + 1.0   # INPUT + GAUGE + TREE + NEWICK + title
+    fig_w = sum(col_w) + 1.2 * (n - 1)        # more space between columns
+    fig_h = main_tree_h + 3 * panel_h + 1.2
 
     fig = plt.figure(figsize=(fig_w, fig_h))
     fig.patch.set_facecolor("#fafafa")
     if title:
-        fig.suptitle(title, fontsize=13, fontweight="bold", y=0.99, va="top")
+        fig.suptitle(title, fontsize=13, fontweight="bold", y=0.995, va="top")
 
-    # 4 rows × n columns; column widths proportional to leaf count
     gs = GridSpec(
         4, n,
         figure=fig,
         height_ratios=[panel_h, panel_h, main_tree_h, panel_h],
         width_ratios=col_w,
-        hspace=0.08,
-        wspace=0.12,
+        hspace=0.10,
+        wspace=0.15,
     )
 
     for col, t in enumerate(trees):
@@ -142,7 +141,11 @@ def save_comparison(examples, path, title="Symmetry comparison"):
         ax_tree   = fig.add_subplot(gs[2, col])
         ax_newick = fig.add_subplot(gs[3, col])
 
-        _text_panel(ax_input, "INPUT", t["input"], "#eef7ee", "#4a9a4a")
+        # Use compact mode for text panels in comparison
+        _text_panel(ax_input, "INPUT", t["input"], "#eef7ee", "#4a9a4a",
+                    compact=True)
+        _text_panel(ax_newick, "NEWICK", t["newick"], "#eeeef8", "#5555aa",
+                    compact=True)
 
         _draw_symmetry_gauge(ax_gauge, t["score"], symmetry_label(t["score"]))
 
@@ -150,12 +153,10 @@ def save_comparison(examples, path, title="Symmetry comparison"):
                          t["max_depth"], t["max_lbl"],
                          node_ratios=t["ratios"])
 
-        _text_panel(ax_newick, "NEWICK", t["newick"], "#eeeef8", "#5555aa")
-
         # Column subtitle showing the label + score
         ax_input.set_title(
             f'{t["label"]}   (score = {t["score"]:.2f})',
-            fontsize=10, fontweight="bold", pad=6,
+            fontsize=10, fontweight="bold", pad=8,
         )
 
     plt.tight_layout(rect=[0, 0, 1, 0.97])
