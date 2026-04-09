@@ -19,59 +19,63 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 
-from tuple_to_newick import tokenize, parse_expr, build_tree, to_newick as _to_newick
+from tuple_to_newick import tokenize, parse_expr, build_tree, to_newick as _to_newick, TreeNode
 
 
 # ---------------------------------------------------------------------------
 # Layout helpers
 # ---------------------------------------------------------------------------
 
-def _collect_leaves(node, children, out):
-    if node not in children:
-        out.append(node)
-    else:
-        for c in children[node]:
-            _collect_leaves(c, children, out)
+def _all_nodes(root: TreeNode):
+    """Yield every node in DFS order."""
+    yield root
+    for c in root.children:
+        yield from _all_nodes(c)
 
 
-def _assign_depth(node, children, depth, d=0):
-    depth[node] = d
-    for c in children.get(node, []):
-        _assign_depth(c, children, depth, d + 1)
+def layout_tree(root: TreeNode):
+    """Return {node: (x, y)} with y = depth and x centred over leaves.
 
+    Uses object identity as the dict key so nodes with duplicate names
+    remain distinct.
+    """
+    # DFS leaf order (left-to-right)
+    leaves = [n for n in _all_nodes(root) if not n.children]
+    leaf_x = {id(n): float(i) for i, n in enumerate(leaves)}
 
-def layout_tree(root, children):
-    """Return {node: (x, y)} with y = depth and x centred over leaves."""
-    leaves = []
-    _collect_leaves(root, children, leaves)
-    leaf_x = {n: float(i) for i, n in enumerate(leaves)}
+    # Depth by recursion
+    depth: dict[int, int] = {}
+    def assign_depth(node, d):
+        depth[id(node)] = d
+        for c in node.children:
+            assign_depth(c, d + 1)
+    assign_depth(root, 0)
 
-    depth = {}
-    _assign_depth(root, children, depth)
-
-    x_pos = {}
-
+    # X position: post-order mean of children
+    x_pos: dict[int, float] = {}
     def assign_x(node):
-        if node not in children:
-            x_pos[node] = leaf_x[node]
+        if not node.children:
+            x_pos[id(node)] = leaf_x[id(node)]
         else:
-            xs = [assign_x(c) for c in children[node]]
-            x_pos[node] = sum(xs) / len(xs)
-        return x_pos[node]
-
+            xs = [assign_x(c) for c in node.children]
+            x_pos[id(node)] = sum(xs) / len(xs)
+        return x_pos[id(node)]
     assign_x(root)
-    return {n: (x_pos[n], float(depth[n])) for n in depth}
+
+    return {node: (x_pos[id(node)], float(depth[id(node)])) for node in _all_nodes(root)}
 
 
 # ---------------------------------------------------------------------------
 # Drawing helpers
 # ---------------------------------------------------------------------------
 
-def _draw_edges(ax, pos, children, color="#444444", lw=1.8):
+def _draw_edges(ax, pos, root: TreeNode, color="#444444", lw=1.8):
     """Dendrogram step edges: stem → horizontal bar → legs."""
-    for parent, child_list in children.items():
+    for parent in _all_nodes(root):
+        if not parent.children:
+            continue
         px, py = pos[parent]
-        child_positions = [pos[c] for c in child_list]
+        child_positions = [pos[c] for c in parent.children]
         cy = child_positions[0][1]          # all children at same depth
         child_xs = [cp[0] for cp in child_positions]
         mid_y = (py + cy) / 2.0
@@ -138,15 +142,15 @@ def visualize(input_str, output_path=None, title=None, show=False):
     # ---- parse tree -------------------------------------------------------
     tokens = tokenize(input_str)
     parsed, _ = parse_expr(tokens, 0)
-    root, children = build_tree(parsed)
-    newick_str = _to_newick(root, children) + ";"
+    root = build_tree(parsed)
+    newick_str = _to_newick(root) + ";"
 
-    pos = layout_tree(root, children)
+    pos = layout_tree(root)
     all_xs = [x for x, _ in pos.values()]
     all_ys = [y for _, y in pos.values()]
-    n_leaves   = sum(1 for n in pos if n not in children)
-    max_depth  = int(max(all_ys))
-    max_lbl    = max(len(str(n)) for n in pos)
+    n_leaves  = sum(1 for n in pos if not n.children)
+    max_depth = int(max(all_ys))
+    max_lbl   = max(len(n.name) for n in pos)
 
     # ---- figure / grid ----------------------------------------------------
     fig_w = max(8, n_leaves * 1.15)
@@ -189,15 +193,15 @@ def visualize(input_str, output_path=None, title=None, show=False):
     ax = ax_tree
     cmap = plt.cm.viridis
     node_colors = {
-        n: cmap(0.1 + 0.75 * (y / max(max_depth, 1)))
-        for n, (_, y) in pos.items()
+        node: cmap(0.1 + 0.75 * (y / max(max_depth, 1)))
+        for node, (_, y) in pos.items()
     }
 
     # Guide lines
     for d in range(max_depth + 1):
         ax.axhline(d, color="#eeeeee", lw=0.8, zorder=0)
 
-    _draw_edges(ax, pos, children)
+    _draw_edges(ax, pos, root)
 
     # Node circles + labels
     radius = 0.18 + max_lbl * 0.025
@@ -210,7 +214,7 @@ def visualize(input_str, output_path=None, title=None, show=False):
         )
         ax.add_patch(circle)
         ax.text(
-            x, y, str(node),
+            x, y, node.name,
             ha="center", va="center",
             fontsize=9, fontweight="bold", color="white",
             zorder=4,
