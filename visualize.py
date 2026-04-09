@@ -105,11 +105,15 @@ def _draw_edges(ax, pos, root: TreeNode, node_ratios=None, lw=1.8):
                     solid_capstyle="round", zorder=1)
 
 
-def _draw_symmetry_gauge(ax, score: float, descriptor: str):
+def _draw_symmetry_gauge(ax, score: float, descriptor: str = "", show_labels: bool = True):
     """Draw the symmetry gauge panel.
 
-    Shows a red→green gradient bar with the score value marked on it,
-    plus a short text label (e.g. 'moderately asymmetric').
+    Shows a red→green gradient bar with the score value marked on it.
+
+    Args:
+        score: symmetry score (0-1)
+        descriptor: label like 'moderately asymmetric' (used only if show_labels=True)
+        show_labels: if True, show SYMMETRY label and descriptor text
     """
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -123,8 +127,8 @@ def _draw_symmetry_gauge(ax, score: float, descriptor: str):
         linewidth=1.0, transform=ax.transAxes, zorder=0,
     ))
 
-    # Gradient bar coordinates (data space, since xlim/ylim = [0,1])
-    bx0, bx1 = 0.22, 0.86
+    # Gradient bar coordinates
+    bx0, bx1 = (0.15, 0.93) if show_labels else (0.05, 0.95)
     by0, by1 = 0.20, 0.78
 
     gradient = np.linspace(0, 1, 512).reshape(1, -1)
@@ -139,8 +143,9 @@ def _draw_symmetry_gauge(ax, score: float, descriptor: str):
     for tick in [0.0, 0.5, 1.0]:
         tx = bx0 + tick * (bx1 - bx0)
         ax.plot([tx, tx], [by0 - 0.04, by0], color="#888888", lw=0.8, zorder=2)
-        ax.text(tx, by0 - 0.06, f"{tick:.1f}", ha="center", va="top",
-                fontsize=7, color="#888888")
+        if show_labels:
+            ax.text(tx, by0 - 0.06, f"{tick:.1f}", ha="center", va="top",
+                    fontsize=6.5, color="#888888")
 
     # Score marker
     mx = bx0 + score * (bx1 - bx0)
@@ -150,21 +155,22 @@ def _draw_symmetry_gauge(ax, score: float, descriptor: str):
             transform=ax.transData)
     ax.text(mx, by1 + 0.08, f"{score:.2f}",
             ha="center", va="bottom",
-            fontsize=9, fontweight="bold", color="black", zorder=4)
+            fontsize=8, fontweight="bold", color="black", zorder=4)
 
-    # End labels
-    ax.text(bx0 - 0.015, (by0 + by1) / 2, "asymmetric",
-            ha="right", va="center", fontsize=7.5, color="#cc4444")
-    ax.text(bx1 + 0.015, (by0 + by1) / 2, "symmetric",
-            ha="left", va="center", fontsize=7.5, color="#33aa33")
+    # End labels (only if show_labels)
+    if show_labels:
+        ax.text(bx0 - 0.015, (by0 + by1) / 2, "asymmetric",
+                ha="right", va="center", fontsize=7, color="#cc4444")
+        ax.text(bx1 + 0.015, (by0 + by1) / 2, "symmetric",
+                ha="left", va="center", fontsize=7, color="#33aa33")
 
-    # Panel label + descriptor
-    ax.text(0.025, 0.52, "SYMMETRY",
-            transform=ax.transAxes, ha="left", va="center",
-            fontsize=9, fontweight="bold", color="#555555", zorder=2)
-    ax.text(0.885, 0.52, descriptor,
-            transform=ax.transAxes, ha="left", va="center",
-            fontsize=8, style="italic", color="#444444", zorder=2)
+        # Panel label + descriptor
+        ax.text(0.025, 0.52, "SYMMETRY",
+                transform=ax.transAxes, ha="left", va="center",
+                fontsize=8.5, fontweight="bold", color="#555555", zorder=2)
+        ax.text(0.88, 0.52, descriptor,
+                transform=ax.transAxes, ha="left", va="center",
+                fontsize=7.5, style="italic", color="#444444", zorder=2)
 
 
 def _text_panel(ax, label, code_str, bg_color, border_color, wrap_width=72,
@@ -303,7 +309,7 @@ def visualize(input_str, output_path=None, title=None, show=False,
     _text_panel(ax_input, "INPUT", input_str, "#eef7ee", "#4a9a4a")
 
     if show_symmetry:
-        _draw_symmetry_gauge(ax_sym, score, descriptor)
+        _draw_symmetry_gauge(ax_sym, score, descriptor, show_labels=False)
 
     _draw_tree_panel(ax_tree, root, pos, max_depth, max_lbl,
                      node_ratios=node_ratios if show_symmetry else None)

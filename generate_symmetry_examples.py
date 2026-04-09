@@ -147,7 +147,8 @@ def save_comparison(examples, path, title="Symmetry comparison"):
         _text_panel(ax_newick, "NEWICK", t["newick"], "#eeeef8", "#5555aa",
                     compact=True)
 
-        _draw_symmetry_gauge(ax_gauge, t["score"], symmetry_label(t["score"]))
+        # Gauge without labels (just the color bar)
+        _draw_symmetry_gauge(ax_gauge, t["score"], show_labels=False)
 
         _draw_tree_panel(ax_tree, t["root"], t["pos"],
                          t["max_depth"], t["max_lbl"],
